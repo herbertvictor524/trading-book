@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trading Book</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Trading Journal</p>
+          <h1>Trading Book</h1>
+        </div>
+
+        <div class="topbar-controls">
+          <label>
+            Theme
+            <select id="themeSelect">
+              <option value="midnight">Midnight</option>
+              <option value="forest">Forest</option>
+              <option value="sunset">Sunset</option>
+            </select>
+          </label>
+
+          <label>
+            Density
+            <select id="densitySelect">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
+          </label>
+
+          <label>
+            Accent
+            <input id="accentPicker" type="color" value="#5eead4" />
+          </label>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="stats-grid" id="statsGrid"></section>
+
+        <section class="panel panel-wide">
+          <div class="panel-header">
+            <h2>Performance</h2>
+            <span class="chip" id="marketPulse">Live</span>
+          </div>
+          <canvas id="equityChart"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Asset Yield</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Yield</th>
+                  <th>Win %</th>
+                </tr>
+              </thead>
+              <tbody id="yieldTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Suggestions</h2>
+          </div>
+          <div id="suggestionsList" class="suggestions-list"></div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-header">
+            <h2>Trade Journal</h2>
+          </div>
+          <div id="tradeList" class="trade-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Human Notes</h2>
+          </div>
+          <div id="notesList" class="notes-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

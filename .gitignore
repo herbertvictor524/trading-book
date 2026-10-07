@@ -1,0 +1,254 @@
+const trades = [
+  { date: '2026-10-01', asset: 'BTC/USD', side: 'Long', pnl: 12.4, result: 'win', note: 'Breakout above prior range.' },
+  { date: '2026-10-02', asset: 'ETH/USD', side: 'Short', pnl: -3.1, result: 'loss', note: 'Rejection near resistance.' },
+  { date: '2026-10-03', asset: 'SOL/USD', side: 'Long', pnl: 18.8, result: 'win', note: 'Momentum continuation after news.' },
+  { date: '2026-10-04', asset: 'XRP/USD', side: 'Long', pnl: -6.7, result: 'loss', note: 'Choppy rotation in range.' },
+  { date: '2026-10-05', asset: 'BTC/USD', side: 'Short', pnl: 9.3, result: 'win', note: 'Quick fade from local highs.' },
+  { date: '2026-10-06', asset: 'ADA/USD', side: 'Long', pnl: 7.5, result: 'win', note: 'Strong inflow and volume expansion.' },
+  { date: '2026-10-07', asset: 'LINK/USD', side: 'Short', pnl: -2.2, result: 'loss', note: 'Unexpected bounce on trend support.' }
+];
+
+const notes = [
+  { title: 'Market read', text: 'Momentum remains strongest in majors after breakout confirmation. Keep entries disciplined and wait on retests.' },
+  { title: 'Journal check', text: 'Most recent winners were driven by clean trend continuation. Avoid forcing entries when volume is flat.' },
+  { title: 'Next focus', text: 'Watch BTC and SOL for higher-low structure. Risk remains limited while the macro picture stays supportive.' }
+];
+
+const themeSelect = document.getElementById('themeSelect');
+const densitySelect = document.getElementById('densitySelect');
+const accentPicker = document.getElementById('accentPicker');
+
+function applyCustomizations() {
+  document.body.dataset.theme = themeSelect.value;
+  document.body.dataset.density = densitySelect.value;
+  document.documentElement.style.setProperty('--accent', accentPicker.value);
+}
+
+themeSelect.addEventListener('change', applyCustomizations);
+densitySelect.addEventListener('change', applyCustomizations);
+accentPicker.addEventListener('input', applyCustomizations);
+
+function formatPercent(value) {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(1)}%`;
+}
+
+function computeStats() {
+  const wins = trades.filter((trade) => trade.result === 'win').length;
+  const total = trades.length;
+  const winRate = (wins / total) * 100;
+  const netPnl = trades.reduce((sum, trade) => sum + trade.pnl, 0);
+  const bestTrade = trades.reduce((best, current) => (current.pnl > best.pnl ? current : best), trades[0]);
+  const bestAsset = Object.entries(
+    trades.reduce((map, trade) => {
+      map[trade.asset] = (map[trade.asset] || 0) + trade.pnl;
+      return map;
+    }, {})
+  ).sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    total,
+    wins,
+    winRate,
+    netPnl,
+    bestTrade,
+    bestAsset
+  };
+}
+
+function renderStats() {
+  const stats = computeStats();
+  const cards = [
+    { label: 'Total Trades', value: stats.total, meta: '7 entries tracked' },
+    { label: 'Win Rate', value: `${stats.winRate.toFixed(1)}%`, meta: `${stats.wins} winners / ${stats.total - stats.wins} losses` },
+    { label: 'Net PnL', value: formatPercent(stats.netPnl), meta: 'Cumulative performance' },
+    { label: 'Best Asset', value: stats.bestAsset ? stats.bestAsset[0] : 'N/A', meta: stats.bestAsset ? `${formatPercent(stats.bestAsset[1])} total` : 'No data' }
+  ];
+
+  document.getElementById('statsGrid').innerHTML = cards
+    .map(
+      (card) => `
+        <article class="stat-card">
+          <div class="label">${card.label}</div>
+          <div class="value">${card.value}</div>
+          <div class="meta">${card.meta}</div>
+        </article>
+      `
+    )
+    .join('');
+}
+
+function renderYieldTable() {
+  const assetMap = trades.reduce((map, trade) => {
+    if (!map[trade.asset]) {
+      map[trade.asset] = { wins: 0, total: 0, pnl: 0 };
+    }
+    map[trade.asset].total += 1;
+    map[trade.asset].wins += trade.result === 'win' ? 1 : 0;
+    map[trade.asset].pnl += trade.pnl;
+    return map;
+  }, {});
+
+  const rows = Object.entries(assetMap)
+    .map(([asset, data]) => ({
+      asset,
+      yield: (data.pnl / Math.max(1, data.total)) * 5,
+      winRate: (data.wins / data.total) * 100
+    }))
+    .sort((a, b) => b.yield - a.yield);
+
+  document.getElementById('yieldTable').innerHTML = rows
+    .map(
+      (row) => `
+        <tr>
+          <td><strong>${row.asset}</strong></td>
+          <td class="${row.yield >= 0 ? 'positive' : 'negative'}">${formatPercent(row.yield)}</td>
+          <td>${row.winRate.toFixed(0)}%</td>
+        </tr>
+      `
+    )
+    .join('');
+}
+
+function renderSuggestions() {
+  const assetMap = trades.reduce((map, trade) => {
+    if (!map[trade.asset]) {
+      map[trade.asset] = { total: 0, wins: 0, pnl: 0 };
+    }
+    map[trade.asset].total += 1;
+    map[trade.asset].wins += trade.result === 'win' ? 1 : 0;
+    map[trade.asset].pnl += trade.pnl;
+    return map;
+  }, {});
+
+  const suggestions = Object.entries(assetMap)
+    .map(([asset, data]) => ({
+      asset,
+      score: data.pnl + (data.wins * 5) - ((data.total - data.wins) * 2),
+      winRate: (data.wins / data.total) * 100,
+      bias: data.pnl >= 0 ? 'Trend supportive' : 'Wait for confirmation'
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  document.getElementById('suggestionsList').innerHTML = suggestions
+    .map(
+      (item) => `
+        <article class="suggestion-card">
+          <h3>${item.asset}</h3>
+          <p><strong>${item.winRate.toFixed(0)}%</strong> win rate with a <strong>${item.bias.toLowerCase()}</strong> setup. Best approach: monitor the next retest and scale only on continuation.</p>
+        </article>
+      `
+    )
+    .join('');
+}
+
+function renderTrades() {
+  document.getElementById('tradeList').innerHTML = trades
+    .map(
+      (trade) => `
+        <article class="trade-item ${trade.result === 'win' ? 'win' : 'loss'}">
+          <div class="trade-badge">${trade.side === 'Long' ? 'L' : 'S'}</div>
+          <div>
+            <h3>${trade.asset} · ${trade.side}</h3>
+            <p>${trade.date} · ${trade.note}</p>
+          </div>
+          <div class="trade-metric ${trade.pnl >= 0 ? 'positive' : 'negative'}">${formatPercent(trade.pnl)}</div>
+        </article>
+      `
+    )
+    .join('');
+}
+
+function renderNotes() {
+  document.getElementById('notesList').innerHTML = notes
+    .map(
+      (note) => `
+        <article class="note-card">
+          <h3>${note.title}</h3>
+          <p>${note.text}</p>
+        </article>
+      `
+    )
+    .join('');
+}
+
+function createEquityChart() {
+  const ctx = document.getElementById('equityChart').getContext('2d');
+  const equitySeries = [100, 101.8, 103.6, 101.2, 108.5, 112.4, 118.1];
+
+  return new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+      datasets: [
+        {
+          label: 'Portfolio Equity',
+          data: equitySeries,
+          borderColor: '#5eead4',
+          backgroundColor: 'rgba(94, 234, 212, 0.18)',
+          fill: true,
+          tension: 0.38,
+          borderWidth: 3,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#94a3b8' },
+          grid: { display: false }
+        },
+        y: {
+          ticks: { color: '#94a3b8' },
+          grid: { color: 'rgba(148,163,184,0.08)' }
+        }
+      }
+    }
+  });
+}
+
+let equityChart = createEquityChart();
+
+function simulateLiveUpdate() {
+  const nextValue = (equityChart.data.datasets[0].data.at(-1) * (1 + (Math.random() - 0.2) * 0.08)).toFixed(1);
+  equityChart.data.labels.push('Now');
+  equityChart.data.datasets[0].data.push(Number(nextValue));
+  if (equityChart.data.labels.length > 12) {
+    equityChart.data.labels.shift();
+    equityChart.data.datasets[0].data.shift();
+  }
+  equityChart.update();
+}
+
+setInterval(simulateLiveUpdate, 5500);
+
+renderStats();
+renderYieldTable();
+renderSuggestions();
+renderTrades();
+renderNotes();
+applyCustomizations();
+
+window.addEventListener('load', () => {
+  const theme = themeSelect.value;
+  document.body.dataset.theme = theme;
+});
+
+const observer = new MutationObserver(() => {
+  const root = document.documentElement;
+  root.style.setProperty('--accent', accentPicker.value);
+});
+
+observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'data-density'] });
+
+const marketPulse = document.getElementById('marketPulse');
+setInterval(() => {
+  marketPulse.textContent = ['Live', 'Active', 'Streaming', 'Tracking'][Math.floor(Math.random() * 4)];
+}, 1800);
